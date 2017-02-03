@@ -13,7 +13,7 @@ if os.path.exists('user.config'):
 config = configparser.ConfigParser()
 config.read(configFile)
 robotUrl = config['tuling']['url']
-robotKey = config['tuling']['key`']
+robotKey = config['tuling']['key']
 
 debugState = 'DEBUG' in os.environ
 def debug(*data):
