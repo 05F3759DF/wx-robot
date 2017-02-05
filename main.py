@@ -15,7 +15,8 @@ config.read(configFile)
 robotUrl = config['tuling']['url']
 robotKey = config['tuling']['key']
 waitingTime = int(config['system']['waiting'])
-outTime = waitingTime = int(config['system']['out'])
+outTime = int(config['system']['out'])
+aftTime = int(config['system']['aft'])
 
 debugState = config['system']['debug'] != 0
 def debug(*data):
@@ -25,12 +26,19 @@ def debug(*data):
 auto_reply_switch = True
 auto_reply_pool = {}
 waiting_pool = {}
+chatting_pool = {}
 
 def pop_waiting_list(username):
     print(username)
     if username in waiting_pool:
         waiting_pool.pop(username)
-        debug('delete')
+        debug('delete from waiting list')
+
+def pop_chatting_list(username):
+    print(username)
+    if username in chatting_pool:
+        chatting_pool.pop(username)
+        debug('delete from chatting list')
 
 def auto_reply(**msg):
     if not auto_reply_switch:
@@ -74,13 +82,21 @@ def text_reply(msg):
             elif msg['Text'] == '结束自动回复':
                 auto_reply_switch = False
                 itchat.send('自动回复：关闭', msg['ToUserName'])
+        if msg['ToUserName'] in chatting_pool:
+            timer = chatting_pool[msg['ToUserName']]
+            timer.cancel()
+        timer = threading.Timer(aftTime, pop_chatting_list, args=(msg['ToUserName'],))
+        chatting_pool[msg['ToUserName']] = timer
+        timer.start()
         if auto_reply_switch and msg['ToUserName'] in auto_reply_pool:
             debug('replied')
             timer = auto_reply_pool[msg['ToUserName']]['timer']
             timer.cancel()
             auto_reply_pool.pop(msg['ToUserName'])
     elif auto_reply_switch:
-        if msg['FromUserName'] in auto_reply_pool:
+        if msg['FromUserName'] in chatting_pool:
+            pass
+        elif msg['FromUserName'] in auto_reply_pool:
             if auto_reply_pool[msg['FromUserName']]['reply_smart']:
                 if msg['Text'] == '再见':
                     itchat.send('再见啦～ [机器人]', toUserName=msg['FromUserName'])
